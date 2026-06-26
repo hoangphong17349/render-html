@@ -112,11 +112,18 @@
   }
   .ln.cur { color: var(--ln-cur); font-weight: 600; }
 
+  /* Wrapper giúp textarea mở rộng tự do theo cả 2 chiều */
+  .code-sizer {
+    display: inline-block; /* co giãn theo nội dung, không bị flex ép */
+    min-width: 100%;       /* ít nhất bằng viewport */
+    padding: var(--PAD) 20px var(--PAD) 0;
+  }
+
   /* Textarea — expands to fit content, no own scroll */
   #code {
-    flex: 1;
-    min-width: 0;
-    padding: var(--PAD) 20px;
+    display: block;
+    width: 100%;
+    padding: 0 20px;
     background: transparent;
     border: none; outline: none; resize: none;
     font-family: var(--CODE); font-size: 13px;
@@ -124,9 +131,9 @@
     color: var(--text);
     tab-size: 2;
     caret-color: var(--accent);
-    white-space: pre;       /* no wrap */
-    overflow: hidden;       /* let parent scroll */
-    /* height = lines * LH + 2*PAD, set by JS */
+    white-space: pre;   /* no wrap */
+    overflow: hidden;   /* let .editor-scroll handle scroll */
+    /* width & height set by JS */
   }
   #code::selection { background: rgba(88,166,255,.22); }
 
@@ -172,8 +179,10 @@
     <div class="panel active" id="panel-code">
       <div class="editor-scroll" id="edScroll">
         <div class="gutter"><div class="gutter-inner" id="gutter"></div></div>
-        <textarea id="code" spellcheck="false" autocomplete="off"
-          autocorrect="off" autocapitalize="off"></textarea>
+        <div class="code-sizer" id="codeSizer">
+          <textarea id="code" spellcheck="false" autocomplete="off"
+            autocorrect="off" autocapitalize="off"></textarea>
+        </div>
       </div>
     </div>
 
@@ -191,9 +200,21 @@
 </div>
 
 <script>
-const ta      = document.getElementById('code');
-const gutterEl= document.getElementById('gutter');
-const preview = document.getElementById('preview');
+const ta       = document.getElementById('code');
+const gutterEl = document.getElementById('gutter');
+const sizerEl  = document.getElementById('codeSizer');
+const preview  = document.getElementById('preview');
+
+/* measure one character width once (monospace) */
+let CH = 7.8; // fallback
+(function() {
+  const s = document.createElement('span');
+  s.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;font:13px/1 "JetBrains Mono","Fira Code",monospace';
+  s.textContent = 'x'.repeat(100);
+  document.body.appendChild(s);
+  CH = s.offsetWidth / 100;
+  document.body.removeChild(s);
+})();
 
 const LH  = 21;   // must match --LH
 const PAD = 14;   // must match --PAD
@@ -289,6 +310,12 @@ function refresh() {
 
   /* set textarea height so it never needs its own scrollbar */
   ta.style.height = (count * LH + PAD * 2) + 'px';
+
+  /* set textarea + sizer width so horizontal scroll works */
+  const maxLen = lines.reduce((m, l) => Math.max(m, l.length), 0);
+  const minW   = Math.max(maxLen * CH + 60, 400); // 60px right padding
+  ta.style.width    = minW + 'px';
+  sizerEl.style.width = minW + 'px';
 
   /* status bar */
   const before = ta.value.substring(0, ta.selectionStart);
