@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML Editor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --tab-active: #1f2937;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --line-bg: #161b22;
+    --line-num: #484f58;
+    --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-ui: 'Inter', system-ui, sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 48px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: var(--font-code);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: .04em;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-code);
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    gap: 0;
+    flex-shrink: 0;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 18px;
+    height: 40px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    user-select: none;
+    letter-spacing: .02em;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-icon {
+    width: 14px;
+    height: 14px;
+    opacity: .7;
+  }
+
+  .tab.active .tab-icon { opacity: 1; }
+
+  /* indicator dot */
+  .tab-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Panels ── */
+  .panel {
+    flex: 1;
+    display: none;
+    overflow: hidden;
+  }
+
+  .panel.active { display: flex; }
+
+  /* ── Code panel ── */
+  #panel-code {
+    flex-direction: row;
+  }
+
+  .line-numbers {
+    width: 52px;
+    flex-shrink: 0;
+    background: var(--line-bg);
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .line-numbers-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: 0 12px 0 8px;
+    gap: 0;
+  }
+
+  .ln {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.625;
+    color: var(--line-num);
+    min-height: 21.125px;
+    transition: color .1s;
+  }
+
+  .ln.current { color: var(--text-muted); }
+
+  .editor-wrap {
+    flex: 1;
+    overflow: auto;
+    padding: 16px 0;
+  }
+
+  textarea#code {
+    display: block;
+    width: 100%;
+    min-height: 100%;
+    padding: 0 20px;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.625;
+    color: var(--text);
+    tab-size: 2;
+    caret-color: var(--accent);
+    white-space: pre;
+    overflow: hidden;
+    spellcheck: false;
+  }
+
+  textarea#code::selection {
+    background: rgba(88,166,255,.25);
+  }
+
+  /* scrollbar */
+  .editor-wrap::-webkit-scrollbar,
+  .line-numbers::-webkit-scrollbar { width: 8px; height: 8px; }
+  .editor-wrap::-webkit-scrollbar-track { background: transparent; }
+  .editor-wrap::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+  .editor-wrap::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+  /* ── Status bar ── */
+  .statusbar {
+    height: 24px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .status-item {
+    font-family: var(--font-code);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .status-item b { color: var(--text); font-weight: 500; }
+
+  /* ── Render panel ── */
+  #panel-render {
+    background: #fff;
+  }
+
+  iframe#preview {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* empty state */
+  .empty-state {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #fff;
+    color: #6b7280;
+    font-family: var(--font-ui);
+  }
+
+  .empty-state svg { opacity: .3; }
+  .empty-state p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="logo">&lt;<span>/</span>&gt; html editor</div>
+    <div class="meta">live preview · auto-render</div>
+  </header>
+
+  <div class="main">
+    <div class="tab-bar">
+      <div class="tab active" data-tab="code" onclick="switchTab('code')">
+        <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polyline points="5,3 1,8 5,13"/>
+          <polyline points="11,3 15,8 11,13"/>
+        </svg>
+        Code
+        <span class="tab-dot"></span>
+      </div>
+      <div class="tab" data-tab="render" onclick="switchTab('render')">
+        <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="1" y="2" width="14" height="11" rx="2"/>
+          <line x1="1" y1="6" x2="15" y2="6"/>
+          <circle cx="3.5" cy="4" r=".8" fill="currentColor" stroke="none"/>
+          <circle cx="6" cy="4" r=".8" fill="currentColor" stroke="none"/>
+        </svg>
+        Render
+      </div>
+    </div>
+
+    <!-- Code panel -->
+    <div class="panel active" id="panel-code">
+      <div class="line-numbers" id="lineNumbers">
+        <div class="line-numbers-inner" id="lineNumInner"></div>
+      </div>
+      <div class="editor-wrap" id="editorWrap">
+        <textarea id="code" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"
+          oninput="onCodeInput()" onkeydown="onKeyDown(event)"
+          onscroll="syncScroll()" onclick="updateCursor()" onkeyup="updateCursor()"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Render panel -->
+    <div class="panel" id="panel-render">
+      <iframe id="preview" sandbox="allow-scripts allow-same-origin allow-modals allow-forms"></iframe>
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <div class="status-item">
+      <span>Dòng</span><b id="statLine">1</b>
+      <span>:</span>
+      <span>Cột</span><b id="statCol">1</b>
+    </div>
+    <div class="status-item"><span>Tổng</span> <b id="statLines">1</b> <span>dòng</span></div>
+    <div class="status-item"><span>Ký tự</span> <b id="statChars">0</b></div>
+    <div class="status-item" id="statLang">HTML</div>
+  </div>
+</div>
+
+<script>
+const ta       = document.getElementById('code');
+const lnInner  = document.getElementById('lineNumInner');
+const edWrap   = document.getElementById('editorWrap');
+const lineNums = document.getElementById('lineNumbers');
+const preview  = document.getElementById('preview');
+
+let renderPending = false;
+let currentTab = 'code';
+
+/* ── Default content ── */
+const defaultCode = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trang của tôi</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      color: #eee;
+    }
+    h1 { font-size: 2.5rem; margin-bottom: .5rem; }
+    p  { color: #aaa; }
+    button {
+      margin-top: 1.5rem;
+      padding: .6rem 1.4rem;
+      background: #58a6ff;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #79b8ff; }
+  </style>
+</head>
+<body>
+  <h1>Xin chào! 👋</h1>
+  <p>Chỉnh sửa code bên tab <strong>Code</strong>, xem kết quả ở tab <strong>Render</strong>.</p>
+  <button onclick="this.textContent='✅ Đã click!'">Nhấn tôi</button>
+
+  <script>
+    console.log('Trang đã load!');
+  <\/script>
+</body>
+</html>`;
+
+ta.value = defaultCode;
+
+/* ── Init ── */
+buildLineNumbers();
+updateStatus();
+renderPreview();
+
+/* ── Tab switching ── */
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  if (name === 'render') renderPreview();
+}
+
+/* ── Render ── */
+function renderPreview() {
+  const html = ta.value.trim();
+  if (!html) {
+    preview.srcdoc = '';
+    return;
+  }
+  preview.srcdoc = html;
+}
+
+/* ── Input handler ── */
+function onCodeInput() {
+  buildLineNumbers();
+  updateStatus();
+  // debounce render if on render tab
+  if (currentTab === 'render') {
+    if (!renderPending) {
+      renderPending = true;
+      setTimeout(() => { renderPreview(); renderPending = false; }, 300);
+    }
+  }
+}
+
+/* ── Tab key ── */
+function onKeyDown(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = ta.selectionStart, end = ta.selectionEnd;
+    const spaces = '  ';
+    ta.value = ta.value.substring(0, s) + spaces + ta.value.substring(end);
+    ta.selectionStart = ta.selectionEnd = s + spaces.length;
+    onCodeInput();
+  }
+}
+
+/* ── Line numbers ── */
+function buildLineNumbers() {
+  const lines = ta.value.split('\n');
+  const count = lines.length;
+  const curLine = getCurrentLine();
+
+  // reuse existing nodes when possible
+  const existing = lnInner.children;
+  while (existing.length > count) lnInner.removeChild(lnInner.lastChild);
+  for (let i = existing.length; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'ln';
+    lnInner.appendChild(el);
+  }
+  for (let i = 0; i < count; i++) {
+    existing[i].textContent = i + 1;
+    existing[i].classList.toggle('current', i + 1 === curLine);
+  }
+
+  // sync height
+  ta.style.minHeight = (count * 21.125 + 32) + 'px';
+}
+
+function getCurrentLine() {
+  return ta.value.substring(0, ta.selectionStart).split('\n').length;
+}
+
+/* ── Scroll sync ── */
+function syncScroll() {
+  lineNums.scrollTop = edWrap.scrollTop;
+}
+
+/* ── Cursor / status ── */
+function updateCursor() {
+  buildLineNumbers();
+  updateStatus();
+}
+
+function updateStatus() {
+  const before = ta.value.substring(0, ta.selectionStart);
+  const lines   = ta.value.split('\n');
+  const line    = before.split('\n').length;
+  const col     = before.split('\n').pop().length + 1;
+
+  document.getElementById('statLine').textContent  = line;
+  document.getElementById('statCol').textContent   = col;
+  document.getElementById('statLines').textContent = lines.length;
+  document.getElementById('statChars').textContent = ta.value.length;
+}
+
+/* keep scroll in sync when line-nums scrollbar used */
+lineNums.addEventListener('scroll', () => { edWrap.scrollTop = lineNums.scrollTop; });
+</script>
+</body>
+</html>
