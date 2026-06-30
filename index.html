@@ -23,10 +23,22 @@
     --PAD:       14px;   /* padding top/bottom editor */
   }
 
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--UI); overflow: hidden; }
+  html, body {
+    height: 100%;
+    background: var(--bg); color: var(--text); font-family: var(--UI);
+    overflow: hidden;
+    overscroll-behavior: none;
+    position: fixed;   /* khoá cứng, không cho trang web tự cuộn/giật khi vuốt */
+    inset: 0;
+    touch-action: none; /* chặn cử chỉ mặc định của trình duyệt ở mức trang */
+  }
 
   /* ── App shell ── */
-  .app { display: flex; flex-direction: column; height: 100vh; }
+  .app {
+    display: flex; flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* dvh (dynamic viewport height: chiều cao viewport động) tránh lỗi co giãn khi thanh địa chỉ ẩn/hiện trên mobile */
+  }
 
   header {
     display: flex; align-items: center; justify-content: space-between;
@@ -76,6 +88,8 @@
     overflow: auto;
     display: flex;         /* row: [gutter | textarea] */
     align-items: flex-start;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
   }
 
   /* scrollbar style */
@@ -95,6 +109,7 @@
     border-right: 1px solid var(--border);
     padding: var(--PAD) 0;
     user-select: none;
+    touch-action: pan-y;
   }
 
   .gutter-inner {
@@ -133,6 +148,7 @@
     caret-color: var(--accent);
     white-space: pre;   /* no wrap */
     overflow: hidden;   /* let .editor-scroll handle scroll */
+    touch-action: pan-x pan-y;
     /* width & height set by JS */
   }
   #code::selection { background: rgba(88,166,255,.22); }
