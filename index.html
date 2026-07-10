@@ -152,6 +152,7 @@
     /* width & height set by JS */
   }
   #code::selection { background: rgba(88,166,255,.22); }
+  #code::placeholder { color: var(--muted); opacity: .7; }
 
   /* ── Status bar ── */
   .statusbar {
@@ -197,7 +198,8 @@
         <div class="gutter"><div class="gutter-inner" id="gutter"></div></div>
         <div class="code-sizer" id="codeSizer">
           <textarea id="code" spellcheck="false" autocomplete="off"
-            autocorrect="off" autocapitalize="off"></textarea>
+            autocorrect="off" autocapitalize="off"
+            placeholder="Dán hoặc gõ code HTML của bạn vào đây..."></textarea>
         </div>
       </div>
     </div>
@@ -238,51 +240,9 @@ const PAD = 14;   // must match --PAD
 let curTab = 'code';
 let renderTimer = null;
 
-/* ── Default code ── */
-const DEFAULT = `<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Trang của tôi</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #1a1a2e, #16213e);
-      color: #eee;
-    }
-    h1 { font-size: 2.5rem; margin-bottom: .5rem; }
-    p  { color: #aaa; }
-    button {
-      margin-top: 1.5rem;
-      padding: .6rem 1.6rem;
-      background: #58a6ff;
-      color: #000;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background .2s;
-    }
-    button:hover { background: #79b8ff; }
-  </style>
-</head>
-<body>
-  <h1>Xin chào! 👋</h1>
-  <p>Sửa code ở tab <strong>Code</strong>, xem kết quả ở tab <strong>Render</strong>.</p>
-  <button onclick="this.textContent='✅ Đã click!'">Nhấn tôi</button>
-  <script>
-    console.log('Hello from iframe!');
-  <\/script>
-</body>
-</html>`;
-
-ta.value = DEFAULT;
+/* Ô nhập liệu bắt đầu trống — chỉ hiện nhãn (placeholder) hướng dẫn,
+   không còn code mẫu (sample code) nữa */
+ta.value = '';
 refresh();
 renderPreview();
 
